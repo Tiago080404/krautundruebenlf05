@@ -1,4 +1,4 @@
-import {NavLink, Link} from "react-router";
+import {Link} from "react-router";
 function Navbar(){
     return(
     <nav className="navbar navbar-expand-lg bg-custom-orange">
@@ -15,6 +15,11 @@ function Navbar(){
               <Link className="nav-link" to="/rezepte" style={{textDecoration:'none'}} >Rezepte</Link>
               <Link className="nav-link" to="/kategorien" style={{textDecoration:'none'}} >Kategorien</Link>
               <Link className="nav-link" to="/zutaten" style={{textDecoration:'none'}} >Zutaten</Link>
+              <Link className="nav-link" to="/neu" style={{textDecoration:'none'}} >Neues Rezept</Link>
+              <Link className="nav-link" to="/adressen" style={{textDecoration:'none'}} >Adressen</Link>
+              <Link className="nav-link" to="/bestellungen" style={{textDecoration:'none'}} >Bestellungen</Link>
+
+
              <a className="nav-link" href="#">Warenkorb</a>
               <a className="nav-link disabled">Disabled</a>
             </div>

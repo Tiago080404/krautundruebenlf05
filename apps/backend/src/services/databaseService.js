@@ -213,48 +213,129 @@ app.get("/api/rezepte/:id", async (req, res) => {
   }
 });
 
-//T-Dog aufgaben:
-app.get("/rezepte/bestimmte", async (req, res) => {
-  //const value = req.query.ingredientValue;
+/// C-DOG Extra-Aufgabe
+app.post("/api/rezepte/neu", async (req, res) => {
+  const { name, beschreibung, zubereitung, bild_url, kategorie, zutaten } =
+    req.body;
 
-  //console.log("Angefragte Zutat:", value);
   try {
-    const value = req.query.ingredientValue;
+    const rezeptRes = await pool.query(
+      "INSERT INTO REZEPT (NAME, BESCHREIBUNG, ZUBEREITUNG, BILD_URL) VALUES ($1, $2, $3, $4) RETURNING REZEPTNR",
+      [name, beschreibung, zubereitung, bild_url]
+    );
+    const rezeptNr = rezeptRes.rows[0].rezeptnr;
 
-    const query =
-      "select r.rezeptnr, r.name,r.beschreibung,r.zubereitung from rezept r join rezeptzutat r2 on r.rezeptnr = r2.rezeptnr join zutat on zutat.zutatennr = r2.zutatennr where zutat.bezeichnung = $1";
-    const result = await pool.query(query, [value]);
-    if (result) {
-      res.status(200).json({ message: "works", data: result.rows });
+    let kategorieRes = await pool.query(
+      "SELECT KATEGORIENR FROM KATEGORIE WHERE NAME = $1",
+      [kategorie]
+    );
+
+    let kategorienr;
+    if (kategorieRes.rows.length === 0) {
+      const neueKategorie = await pool.query(
+        "INSERT INTO KATEGORIE (NAME) VALUES ($1) RETURNING KATEGORIENR",
+        [kategorie]
+      );
+      kategorienr = neueKategorie.rows[0].kategorienr;
+    } else {
+      kategorienr = kategorieRes.rows[0].kategorienr;
     }
+    await pool.query(
+      "INSERT INTO REZEPTKATEGORIE (REZEPTNR, KATEGORIENR) VALUES ($1, $2)",
+      [rezeptNr, kategorienr]
+    );
+    for (let z of zutaten) {
+      await pool.query(
+        "INSERT INTO REZEPTZUTAT (REZEPTNR, ZUTATENNR, MENGE, EINHEIT) VALUES ($1, $2, $3, $4)",
+        [rezeptNr, z.zutatenNr, z.menge, z.einheit]
+      );
+    }
+
+    res.json({
+      rezeptnr: rezeptNr,
+      message: "Rezept erfolgreich gespeichert!",
+    });
   } catch (err) {
-    console.log(err);
+    console.error("❌ Fehler beim Speichern des Rezepts:", err);
+    res.status(500).json({ error: "Fehler beim Speichern des Rezepts." });
   }
 });
 
-app.get("/rezepte/nutrition", async (req, res) => {
-  const { kundennr } = req.query;
-  console.log(req.query);
+app.get("/api/einheiten", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT DISTINCT EINHEIT FROM ZUTAT WHERE EINHEIT IS NOT NULL ORDER BY EINHEIT"
+    );
+    res.json(result.rows.map((row) => row.einheit));
+  } catch (error) {
+    console.error("Fehler beim Abrufen der Einheiten:", error);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
+// Zusatzabfrage C-DOG
+app.get("/api/adressen", async (req, res) => {
+  try {
+    const query = "SELECT * FROM ADRESSE ORDER BY ORT, STRASSE";
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Fehler beim Abrufen der Adressen:", error);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
+/// Bestellungen C-DOG
+app.get("/api/bestellungen", async (req, res) => {
   try {
     const query = `
-      SELECT 
-        b.kundennr, k.nachname, k.vorname,
-        AVG(z.kalorien * b2.menge) AS durchscnittliche_kalorien,
-        AVG(z.kohlenhydrate * b2.menge) AS durchscnittliche_kohlenhydrate,
-        AVG(z.protein * b2.menge) AS durchschnittliche_proteine
-      FROM bestellung b
-      JOIN bestellungzutat b2 ON b.bestellnr = b2.bestellnr
-      JOIN zutat z ON z.zutatennr = b2.zutatennr
-      JOIN kunde k ON b.kundennr = k.kundennr
-      WHERE k.kundennr = $1
-      GROUP BY b.kundennr, k.nachname, k.vorname;
+      SELECT B.BESTELLNR, K.VORNAME, K.NACHNAME, B.BESTELLDATUM, B.RECHNUNGSBETRAG
+      FROM BESTELLUNG B
+      JOIN KUNDE K ON B.KUNDENNR = K.KUNDENNR
+      ORDER BY B.BESTELLDATUM DESC;
     `;
-    const result = await pool.query(query, [kundennr]);
-    if (result) {
-      res.status(200).json({ message: "works:", data: result.rows[0] });
+
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Fehler beim Abrufen der Bestellungen:", error);
+    res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+app.get("/api/bestellungen/:id", async (req, res) => {
+  try {
+    const bestellnr = req.params.id;
+
+    // Bestellungsinformationen abrufen
+    const bestellungQuery = `
+      SELECT B.BESTELLNR, K.VORNAME, K.NACHNAME, B.BESTELLDATUM, B.RECHNUNGSBETRAG
+      FROM BESTELLUNG B
+      JOIN KUNDE K ON B.KUNDENNR = K.KUNDENNR
+      WHERE B.BESTELLNR = $1
+    `;
+    const bestellungRes = await pool.query(bestellungQuery, [bestellnr]);
+
+    if (bestellungRes.rows.length === 0) {
+      return res.status(404).json({ error: "Bestellung nicht gefunden" });
     }
-  } catch (err) {
-    console.log(err);
+
+    // Zutaten der Bestellung abrufen
+    const zutatenQuery = `
+      SELECT Z.ZUTATENNR, Z.BEZEICHNUNG, BZ.MENGE, Z.EINHEIT
+      FROM BESTELLUNGZUTAT BZ
+      JOIN ZUTAT Z ON BZ.ZUTATENNR = Z.ZUTATENNR
+      WHERE BZ.BESTELLNR = $1
+    `;
+    const zutatenRes = await pool.query(zutatenQuery, [bestellnr]);
+
+    // Response mit Bestellungsinfos und Zutaten
+    res.json({
+      bestellung: bestellungRes.rows[0],
+      zutaten: zutatenRes.rows,
+    });
+  } catch (error) {
+    console.error("Fehler beim Abrufen der Bestellungsdetails:", error);
+    res.status(500).json({ error: "Interner Serverfehler" });
   }
 });
 
