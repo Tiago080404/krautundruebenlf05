@@ -1,0 +1,17 @@
+// Import Bootstrap functions & variables first
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+
+// Define a custom orange color
+$custom-orange: #FF5733; // Change this to your preferred shade
+
+// Add the new color to Bootstrap's theme-colors map
+$custom-colors: (
+  "custom-orange": $orange-400
+);
+
+// Merge the custom colors with Bootstrap’s default theme colors
+$theme-colors: map-merge($theme-colors, $custom-colors);
+
+// Import Bootstrap's SCSS
+@import "bootstrap/scss/bootstrap";
