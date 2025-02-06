@@ -6,12 +6,12 @@ Costumer: KRAUT UND RÜBEN
 
 In our Scrum Board we organize our work and progress.
 
-![scrum board](/images/image%20copy.png)
+![scrum board](/krautundruebenlf05/apps/images/sprint1.png)
 
 ## Sprint 1: Discovery Track [23.01. - 27.01.2024]
 
 The focus of this sprint is on gathering knowledge. Tasks include self-study, reading, summarizing, explaining to each other, attending lectures, noting down and clarifying questions. The output is a document summarizing a
-[list of essential SQL commands](/sql-commands.md).
+[list of essential SQL commands](/krautundruebenlf05/apps/sql-commands.md).
 We also use the lectures and inputs provided by our teachers to expand our knowledge. During the daily meetings, we focus on explaining to each other what we learned the day before. At the end of the dailys we discuss any blockers we face and work together to resolve them.
 
 In our sprint backlog, we outlined following tasks:
@@ -31,11 +31,11 @@ In our sprint backlog, we outlined following tasks:
 
 Start of the Sprint:
 
-![scrum board sprint 1](/images/image.png)
+![scrum board sprint 1](/krautundruebenlf05/apps/images/sprint1.png)
 
 End of the Sprint:
 
-![scrum board sprint 1 end](/images/sprint1-done.png)
+![scrum board sprint 1 end](/krautundruebenlf05/apps/images/sprint1-done.png)
 
 ## Sprint 2: Conceptual and logical Database Design [27.01. - 30.01-2024]
 
@@ -71,12 +71,12 @@ Begin of Sprint 2:
 
 ### **Final ERM Diagram**
 
-![ERM](/images/erd-soll-zustand.png)
+![ERM](/krautundruebenlf05/apps/images/erd-soll-zustand.png)
 
 ## Sprint 3: Customize the database and test data [30.01. - 03.02-2024]
 
 Begin of Sprint 3:
-![scurm board sprint2](/images/sprint3.png)
+![scurm board sprint2](/krautundruebenlf05/apps/images/sprint3.png)
 
 ## In our sprint backlog, we outlined the following tasks
 
@@ -117,15 +117,15 @@ Begin of Sprint 3:
 
 ### **🚀 First Look at the Frontend with first Integrated SQL Query for Data Display and Functionality 🚀**
 
-![First Look](/images/1st-version-frontend.png)
+![First Look](/krautundruebenlf05/apps/images/1st-version-frontend.png)
 
 ## Sprint 4: Development of queries [03.02. - 06.02-2024]
 
 ### Scrum Board Sprint Backlog of Sprint 4
 
-![scurm board sprint4](/images/sprint4.png)
+![scurm board sprint4](/krautundruebenlf05/apps/images/sprint4.png)
 
-![scrum board sprint4.2](/images/sprint4.2.png)
+![scrum board sprint4.2](/krautundruebenlf05/apps/images/sprint4.2.png)
 
 ## In our sprint backlog, we outlined the following tasks
 
@@ -150,3 +150,5 @@ Begin of Sprint 3:
    - Create at least three more queries.
 
 ## **Key Achievements in Sprint 4**
+
+The [backend file](/krautundruebenlf05/apps/backend/src/services/databaseService.js) contains the required SQL queries. It retrieves information from the database and displays it in the frontend.
