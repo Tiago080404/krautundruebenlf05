@@ -42,7 +42,7 @@ End of the Sprint:
 ### Scrum Board of Sprint 2: Conceptual and logical Database Design
 
 Begin of Sprint 2:
-![scurm board sprint2](/images/sprint%202-begin.png)
+![scurm board sprint2](/krautundruebenlf05/apps/images/sprint%202-begin.png)
 
 ## In our sprint backlog, we outlined the following tasks
 
