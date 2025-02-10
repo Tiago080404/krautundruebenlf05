@@ -60,7 +60,7 @@ function Rezepte() {
   };
 
   return (
-    <div className="container mt-4">
+    <div>
       <Navbar />
       <h1 className="text-primary text-center mb-4">Ernährungskategorien</h1>
 

@@ -49,7 +49,7 @@ function RezeptDetail() {
   };
 
   return (
-    <div className="container mt-5 text-center">
+    <div>
       <Navbar />
       {error && <p className="text-danger mt-3">{error}</p>}
 

@@ -10,6 +10,7 @@ import RezeptDetail from './pages/RezeptDetail.jsx';
 import Adressen from './pages/Adressen.jsx';
 import Bestellungen from './pages/Bestellungen.jsx';
 import NeuesRezept from './pages/RezepteNeu.jsx';
+import DashboardPage from './pages/Dashboard.jsx';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../src/styles/custom.scss"
 
@@ -25,7 +26,7 @@ createRoot(document.getElementById('root')).render(
       <Route path="/adressen" element={<Adressen />} />
       <Route path="/bestellungen" element={<Bestellungen />} />
       <Route path="/neu" element={<NeuesRezept />} />
-
+      <Route path='/dashboard' element={<DashboardPage/>}/>
 
       
     </Routes>

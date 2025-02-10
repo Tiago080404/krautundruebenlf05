@@ -1,6 +1,6 @@
 const express = require("express");
 const port = 5000;
-const { Pool } = require("pg");
+const { Pool, Query } = require("pg");
 const cors = require("cors");
 const app = express();
 
@@ -85,6 +85,7 @@ app.get("/api/kategorien", async (req, res) => {
 
 app.get("/api/rezepte/kategorie", async (req, res) => {
   try {
+    console.log(req.query);
     const kategorie = req.query.kategorie;
     if (!kategorie) {
       return res.status(400).json({ error: "Kategorie ist erforderlich" });
@@ -219,42 +220,32 @@ app.post("/api/rezepte/neu", async (req, res) => {
     req.body;
 
   try {
-    const rezeptRes = await pool.query(
-      "INSERT INTO REZEPT (NAME, BESCHREIBUNG, ZUBEREITUNG, BILD_URL) VALUES ($1, $2, $3, $4) RETURNING REZEPTNR",
-      [name, beschreibung, zubereitung, bild_url]
+    console.log(
+      "Input Werte:",
+      name,
+      beschreibung,
+      zubereitung,
+      bild_url,
+      kategorie,
+      zutaten
     );
-    const rezeptNr = rezeptRes.rows[0].rezeptnr;
-
-    let kategorieRes = await pool.query(
-      "SELECT KATEGORIENR FROM KATEGORIE WHERE NAME = $1",
-      [kategorie]
+    const result = await pool.query(
+      "SELECT neues_rezept_anlegen($1, $2, $3, $4, $5, $6) AS rezeptnr",
+      [
+        name,
+        beschreibung,
+        zubereitung,
+        bild_url,
+        kategorie,
+        JSON.stringify(zutaten),
+      ]
     );
-
-    let kategorienr;
-    if (kategorieRes.rows.length === 0) {
-      const neueKategorie = await pool.query(
-        "INSERT INTO KATEGORIE (NAME) VALUES ($1) RETURNING KATEGORIENR",
-        [kategorie]
-      );
-      kategorienr = neueKategorie.rows[0].kategorienr;
-    } else {
-      kategorienr = kategorieRes.rows[0].kategorienr;
+    if (result) {
+      res.json({
+        rezeptnr: result.rows[0].rezeptnr,
+        message: "Rezept erfolgreich gespeichert!",
+      });
     }
-    await pool.query(
-      "INSERT INTO REZEPTKATEGORIE (REZEPTNR, KATEGORIENR) VALUES ($1, $2)",
-      [rezeptNr, kategorienr]
-    );
-    for (let z of zutaten) {
-      await pool.query(
-        "INSERT INTO REZEPTZUTAT (REZEPTNR, ZUTATENNR, MENGE, EINHEIT) VALUES ($1, $2, $3, $4)",
-        [rezeptNr, z.zutatenNr, z.menge, z.einheit]
-      );
-    }
-
-    res.json({
-      rezeptnr: rezeptNr,
-      message: "Rezept erfolgreich gespeichert!",
-    });
   } catch (err) {
     console.error("❌ Fehler beim Speichern des Rezepts:", err);
     res.status(500).json({ error: "Fehler beim Speichern des Rezepts." });
@@ -336,6 +327,187 @@ app.get("/api/bestellungen/:id", async (req, res) => {
   } catch (error) {
     console.error("Fehler beim Abrufen der Bestellungsdetails:", error);
     res.status(500).json({ error: "Interner Serverfehler" });
+  }
+});
+
+//T-Dog aufgaben:
+// Auswahl aller Rezepte, die eine gewisse Zutat enthalten
+app.get("/rezepte/bestimmte", async (req, res) => {
+  //const value = req.query.ingredientValue;
+
+  //console.log("Angefragte Zutat:", value);
+  try {
+    const value = req.query.ingredientValue;
+
+    const query =
+      "select r.rezeptnr, r.name,r.beschreibung,r.zubereitung from rezept r join rezeptzutat r2 on r.rezeptnr = r2.rezeptnr join zutat on zutat.zutatennr = r2.zutatennr where zutat.bezeichnung = $1";
+    const result = await pool.query(query, [value]);
+    if (result) {
+      res.status(200).json({ message: "works", data: result.rows });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+//Berechnung der durchschnittlichen Nährwerte aller Bestellungen eines Kunden
+app.get("/rezepte/nutrition", async (req, res) => {
+  const { kundennr } = req.query;
+  console.log(req.query);
+  try {
+    const query = `
+      SELECT 
+        b.kundennr, k.nachname, k.vorname,
+        AVG(z.kalorien * b2.menge) AS durchscnittliche_kalorien,
+        AVG(z.kohlenhydrate * b2.menge) AS durchscnittliche_kohlenhydrate,
+        AVG(z.protein * b2.menge) AS durchschnittliche_proteine
+      FROM bestellung b
+      JOIN bestellungzutat b2 ON b.bestellnr = b2.bestellnr
+      JOIN zutat z ON z.zutatennr = b2.zutatennr
+      JOIN kunde k ON b.kundennr = k.kundennr
+      WHERE k.kundennr = $1
+      GROUP BY b.kundennr, k.nachname, k.vorname;
+    `;
+    const result = await pool.query(query, [kundennr]);
+    if (result) {
+      res.status(200).json({ message: "works:", data: result.rows[0] });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+//Top 5 Zutaten
+app.get("/rezepte/topfive", async (req, res) => {
+  try {
+    const query =
+      "select z.bezeichnung ,count(r.zutatennr)  as zutatenhaeufigkeit from rezeptzutat r join zutat z on r.zutatennr = z.zutatennr group by z.bezeichnung order by zutatenhaeufigkeit desc limit 5";
+    const result = await pool.query(query);
+
+    if (result) {
+      res
+        .status(200)
+        .json({ message: "Top 5 retrieved successfully", data: result.rows });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+//Auswahl aller Rezepte, die eine bestimmte Kalorienmenge nicht überschreiten
+app.get("/rezepte/bestimmtekalorien", async (req, res) => {
+  const { kalorien } = req.query;
+  console.log(kalorien);
+  try {
+    const value = kalorien;
+    const query =
+      "select r.name,r.beschreibung,r.zubereitung from rezept r join rezeptzutat r2  on r2.rezeptnr = r.rezeptnr join zutat z on z.zutatennr = r2.zutatennr group by r.name, r.beschreibung, r.zubereitung having sum(z.kalorien) <$1;";
+    const result = await pool.query(query, [value]);
+    if (result) {
+      res
+        .status(200)
+        .json({ message: "Bestimmte Kalorien", data: result.rows });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//Auswahl aller Rezepte, die weniger als fünf Zutaten enthalten und eine bestimmte Ernährungskategorie erfüllen
+//Der ist nicht auf der Website eingebaut
+app.get("/rezepte/kategorieandfive", async (req, res) => {
+  try {
+    console.log(req.body);
+    const value = req.body.kategorienr;
+    const query =
+      "select r.name,r.beschreibung,r.zubereitung from rezept r join rezeptzutat r2 on r2.rezeptnr = r.rezeptnr join zutat z on z.zutatennr = r2.zutatennr join rezeptkategorie r3 on r3.rezeptnr=r.rezeptnr join kategorie k on k.kategorienr = r3.kategorienr where k.name =$1 group by  r.rezeptnr,r.name, r.beschreibung, r.zubereitung  having count(r2.rezeptnr)<20";
+    const result = await pool.query(query, [value]);
+
+    if (result) {
+      res.status(200).json({ message: "Hier die Rezepte:", data: result.rows });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//Alle Kunden mit Bestellungen
+app.get("/rezepte/kundemitbestellung", async (req, res) => {
+  try {
+    const query =
+      "select k.vorname, b.bestellnr  from kunde k left join bestellung b on b.kundennr = k.kundennr";
+    const result = await pool.query(query);
+    if (result) {
+      res.status(200).json({
+        message: "Kunde mit bestellungen",
+        data: result.rows,
+      });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+//`sp_search_recipes_by_ingredient_and_calorie`)
+app.get("/rezepte/zutatundkalorien", async (req, res) => {
+  console.log(req.query.zutat);
+  console.log(req.query.kalorien);
+  try {
+    const value1 = req.query.zutat;
+    const value2 = req.query.kalorien;
+    const query = "Select * from get_recipes_with_butter($1,$2)";
+    const result = await pool.query(query, [value1, value2]);
+
+    if (result) {
+      res.status(200).json({ message: "Rezepte abgerufen", data: result.rows });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+//sp_get_average_nutrition_for_customer`
+app.get("/rezepte/durchschnittlichevonkunde", async (req, res) => {
+  try {
+    const value = req.query.customernr;
+    console.log(value);
+    const query = "SELECT * From sp_kunden_ernaehrung($1)";
+    const result = await pool.query(query, [value]);
+    if (result) {
+      res.status(200).json({ message: "success", data: result.rows });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//daten abrufen für kunden
+app.get("/user/wantsdata", async (req, res) => {
+  try {
+    const value = "2001";
+    const query =
+      "SELECT K.vorname,K.nachname,K.geburtsdatum,K.telefon,K.email,A.strasse,A.hausnr,A.plz,A.ort,A.typ FROM KUNDE K JOIN ADRESSE A ON A.adressennr = K.adressennr WHERE K.kundennr = $1";
+    const result = await pool.query(query, [value]);
+    if (result) {
+      res
+        .status(200)
+        .json({ message: "Here is the Data from", data: result.rows });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//daten löschen lassen wenn Kunde es möchte
+app.delete("/delete/userdata", async (req, res) => {
+  try {
+    const value = "2001";
+    const query =
+      "DELETE KUNDE FROM KUNDE K JOIN ADRESSE A ON A.adressennr=K.adressennr where K.kundennr = $1";
+    const result = await pool.query(query, [value]);
+
+    if (result) {
+      res
+        .status(200)
+        .json({ message: "Your data got deleted!", data: result.rows });
+    }
+  } catch (err) {
+    console.log(err);
   }
 });
 

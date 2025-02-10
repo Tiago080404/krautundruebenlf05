@@ -18,10 +18,9 @@ function Navbar(){
               <Link className="nav-link" to="/neu" style={{textDecoration:'none'}} >Neues Rezept</Link>
               <Link className="nav-link" to="/adressen" style={{textDecoration:'none'}} >Adressen</Link>
               <Link className="nav-link" to="/bestellungen" style={{textDecoration:'none'}} >Bestellungen</Link>
-
+              <Link className="nav-link" to= "/dashboard" style={{textDecoration:'none'}}>Dashboard</Link>
 
              <a className="nav-link" href="#">Warenkorb</a>
-              <a className="nav-link disabled">Disabled</a>
             </div>
           </div>
         </div>

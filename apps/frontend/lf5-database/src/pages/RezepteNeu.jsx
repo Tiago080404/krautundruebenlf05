@@ -98,7 +98,7 @@ function NeuesRezept() {
   };
 
   return (
-    <div className="container mt-5">
+    <div>
       <Navbar />
       <h2 className="text-primary text-center">Neues Rezept hinzufügen</h2>
 

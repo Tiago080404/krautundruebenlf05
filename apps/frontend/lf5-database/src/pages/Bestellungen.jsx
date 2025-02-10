@@ -62,7 +62,7 @@ function Bestellungen() {
   };
 
   return (
-    <div className="container mt-5">
+    <div>
       <Navbar />
       <h2 className="text-primary text-center">Bestellungen</h2>
 

@@ -64,7 +64,7 @@ function Zutaten() {
   };
 
   return (
-    <div className="container mt-4">
+    <div>
       <Navbar />
       <h1 className="text-primary text-center mb-4">Zutaten auswählen</h1>
       <p className="text-center">Klicke auf das 🛒-Symbol, um Zutaten hinzuzufügen oder zu entfernen.</p>

@@ -1,0 +1,10 @@
+body {
+    background-image: url('../feimages/essenbild.jpeg'); /* Adjust the path if necessary */
+    background-size: cover; /* Makes sure the image covers the entire screen */
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat; /* Prevents the image from repeating */
+    height: 100vh; /* Ensures full viewport height */
+    margin: 0;
+    padding: 0;
+  }
+  
